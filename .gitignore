@@ -1,0 +1,15 @@
+# Downloaded libraries and local installations
+.deps/
+.local/
+
+# Generated build output
+build/
+*.o
+*.a
+*.so
+
+# Local editor and agent configuration
+.vscode/
+.agents/
+.aws/
+.codex/
