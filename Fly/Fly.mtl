@@ -1,0 +1,12 @@
+newmtl Fly
+Kd 1 1 1
+d 1
+Ke 0 0 0
+illum 2
+map_Kd images/Fly.png
+map_Bump images/Fly_SPEC.tga.png
+Ks 0.2 0.2 0.2
+Ns 0
+map_Ks images/Fly_SPEC.tga.png
+map_Ns images/Fly_AO.tga.png
+
