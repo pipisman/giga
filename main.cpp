@@ -103,7 +103,7 @@ public:
         // vurti camerata
 
         // wzima posokata na kamerata i go dobavq kum skorosta
-        forward.y = 0.0f;
+        // forward.y = 0.0f;
         forward = Vector3Normalize(forward);
 
         // velocity handling
