@@ -120,8 +120,13 @@ public:
     forward = Vector3Normalize(forward);
 
     // velocity handling
-    if (IsKeyDown(KEY_W))
+    if (IsKeyDown(KEY_W)) {
       velocity = Vector3Add(velocity, forward);
+      // vurti muhata v posokata nagore i nadolu
+      rotation.z = Lerp(rotation.z, cpitch, 0.2f);
+    } else {
+      rotation.z = Lerp(rotation.z, 0, 0.2f);
+    }
     velocity = Vector3Scale(velocity, falloff);
     float dt = GetFrameTime();
     position =
