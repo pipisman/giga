@@ -1,8 +1,51 @@
 #include "raylib.h"
 #include "raymath.h"
 #include "rcamera.h"
+#include <stdlib.h>
+#include <iostream>
 
-// ima edin takuv na client
+// modificiran kod ot camera.h
+// hodi nalqvo i nadqsno
+void CameraYaw2(Camera *camera, float angle)
+{
+    // nagore
+    Vector3 up = GetCameraUp(camera);
+
+    // target poziciqta relativna kum camerata
+    Vector3 targetPosition = Vector3Subtract(camera->target, camera->position);
+
+    // zavurta se okolo y
+    targetPosition = Vector3RotateByAxisAngle(targetPosition, up, angle);
+
+    // wzima targeta i otiva nazade
+    camera->position = Vector3Subtract(camera->target, targetPosition);
+    // interpolaciq na rotaciqta (deprekirano, runva se v update)
+    // rotation->y = Lerp(rotation->y, angle, 0.1f);
+}
+
+// modificiran kod ot rcamera.h
+// pitch shte reche nagore i nadolu
+void CameraPitch2(Camera *camera, float angle)
+{
+    // up relativno kum kamerata
+    // Vector3 up = GetCameraUp(camera);
+
+    // globalen target vector
+    Vector3 targetPosition = Vector3Subtract(camera->target, camera->position);
+
+    // nadqsno relativno ot camerata
+    Vector3 right = GetCameraRight(camera);
+
+    // Rotate view vector around right axis
+    targetPosition = Vector3RotateByAxisAngle(targetPosition, right, angle);
+
+    camera->position = Vector3Subtract(camera->target, targetPosition);
+
+    // interpolaciq na rotaciqta (deprekirano, runva se v update)
+    // rotation->y = Lerp(rotation->y, angle, 0.1f);
+}
+
+// edin takuv na client
 class gigger
 {
 public:
@@ -16,56 +59,129 @@ public:
     const float falloff = 0.98f;
     gigger(Model &model)
     {
-        // modela se pasva ot main v sluchai ako polzvame muhata za drugi neshta
-
-        camera.position = (Vector3){50.0f, 50.0f, 50.0f};
-        camera.target = (Vector3){0.0f, 12.0f, 0.0f};
+        this->model = model;
+        DisableCursor();
+        position = (Vector3){0.0f, 0.0f, 0.0f};
+        rotation = (Vector3){0.0f, 0.0f, 0.0f};
+        velocity = (Vector3){0.0f, 0.0f, 0.0f};
+        ;
+        camera.target = position;
+        camera.position = (Vector3){0.0f, 5.0f, -10.0f};
         camera.up = (Vector3){0.0f, 1.0f, 0.0f};
         camera.fovy = 80.0f;
-        camera.projection = CAMERA_THIRD_PERSON;
-
+        camera.projection = CAMERA_PERSPECTIVE;
         // todo: zameni vgradenata funkciq sus custom UPDATECAMERAPRO69 kato izpolzva pochti sushtata implementaciq
         // kato CAMERA_THIRDPERSON
         // https://www.reddit.com/r/raylib/comments/v3q41l/full_camera_rotation/
+        // note: napravih go veche
 
-        UpdateCamera(&camera, CAMERA_PERSPECTIVE);
+        // deprekirano
+        // UpdateCamera(&camera, CAMERA_THIRD_PERSON);
     }
+
     void update()
     {
+
+        Vector2 mouseDelta = GetMouseDelta();
+        float sensitivity = 0.003f; // Adjust this to change mouse speed
+
+        // 2. Rotate camera based on actual mouse movement
+        CameraYaw2(&camera, -mouseDelta.x * sensitivity);
+        CameraPitch2(&camera, -mouseDelta.y * sensitivity);
         // NAPRAVI: napravi da moje da se obrushta kamerata kato na third person i da se interpolira rotaciqta na modela
         // s tazi na kamerata
         // pomoshti promenlivi za tuj
-        Vector3 up = {0, 1, 0};
+        // Vector3 up = {0, 1, 0};
         Vector3 forward = Vector3Normalize(Vector3Subtract(camera.target, camera.position));
-        Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, up));
+        // Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, up));
         // camerata vinagi e oburnata kum camera.target
         // moje bi go napravi da se obrushta modela bazirano na razlikata mejdu vectora ot predishniq frame i ot tozi?
         // mahni updatecamera i polzvaj chast ot logikata deto se polzva v rcamera.h
 
         // updateva se poziciqta wseki frame kakto i targeta
 
-        camera.target = position;
+        // vurti camerata
 
         // wzima posokata na kamerata i go dobavq kum skorosta
         forward.y = 0.0f;
         forward = Vector3Normalize(forward);
 
+        // velocity handling
         velocity = Vector3Add(velocity, forward);
         velocity = Vector3Scale(velocity, falloff);
-        position = Vector3Add(position, velocity);
+        float dt = GetFrameTime();
+        position = Vector3Add(position, Vector3Multiply(velocity, (Vector3){dt, dt, dt}));
+
+        // premestva kamerata nazad i slaga positiona na fly-a kato target
+        Vector3 offset = Vector3Subtract(camera.position, camera.target);
+        camera.target = position;
+        camera.position = Vector3Add(camera.target, offset);
+
+        // atan2f e kato vector kum gradusi direktno samo trqbwa da se convertne kum radiani
+        float targetAngleYaw = atan2f(forward.x, forward.z);
+
+        // interpolira se v update za razlika ot v yaw() i pitch()
+        std::cout << "predi: " << rotation.y << "\n";
+        rotation.y = Lerp(rotation.y, targetAngleYaw, 0.2f);
+        std::cout << "sled: " << rotation.y << "\n";
     }
     void draw()
     {
+        rotation.y -= 3.14 / 2;
+
         // wseki frame applyva rotaciqta kum transforma
         model.transform = MatrixRotateXYZ(rotation);
 
         DrawModel(model, position, 1.0f, WHITE);
+
+        DrawCube(position, 1.0f, 1.0f, 1.0f, RED);
+        DrawCubeWires(position, 1.0f, 1.0f, 1.0f, BLACK);
     }
     void drawui()
     {
     }
 };
-int main()
+
+int main(void)
 {
-    // turi boilerplate coda ot modelload.cpp tuk i ne zabravqj da callnesh update() i draw()
+    const int screenWidth = 800;
+    const int screenHeight = 450;
+
+    InitWindow(screenWidth, screenHeight, "gigger");
+
+    Model model = LoadModel("Fly/Fly_centered.obj");
+    Texture2D texture = LoadTexture("Fly/images/Fly.png");
+    model.materials[0].maps[MATERIAL_MAP_DIFFUSE].texture = texture;
+
+    BoundingBox bounds = GetMeshBoundingBox(model.meshes[0]);
+
+    SetTargetFPS(60);
+
+    gigger giga = gigger(model);
+    while (!WindowShouldClose())
+    {
+        // callvat se gigger funkciite
+        giga.update();
+
+        BeginDrawing();
+
+        ClearBackground(RAYWHITE);
+
+        BeginMode3D(giga.camera);
+
+        giga.draw();
+        DrawGrid(40, 1.0f); // grid
+        EndMode3D();
+        giga.drawui();
+        DrawFPS(10, 10);
+
+        EndDrawing();
+    }
+
+    UnloadTexture(texture);
+    UnloadModel(model);
+
+    CloseWindow();
+
+    return 0;
 }
