@@ -3,6 +3,7 @@
 #include "rcamera.h"
 #include <stdlib.h>
 #include <iostream>
+#include <algorithm>
 
 // modificiran kod ot camera.h
 // hodi nalqvo i nadqsno
@@ -53,7 +54,7 @@ public:
     Vector3 position;
     Vector3 rotation;
     Model model;
-
+    float cpitch = 0;
     // camerata si stoi v instancea na igracha
     Camera camera;
     const float falloff = 0.98f;
@@ -83,11 +84,17 @@ public:
     {
 
         Vector2 mouseDelta = GetMouseDelta();
-        float sensitivity = 0.003f; // Adjust this to change mouse speed
+        float sensitivity = 0.003f;
 
-        // 2. Rotate camera based on actual mouse movement
+        // wzima pitch, suzdava promenliva i gi subira, clampva promenlivata, izvajda gi
+        // i ostava samo clampnatata promqna
+        float targetPitch = cpitch - (mouseDelta.y * sensitivity);
+        targetPitch = Clamp(targetPitch, DEG2RAD * -80, DEG2RAD * 80);
+        float pitchDiff = targetPitch - cpitch;
+        cpitch = targetPitch;
+
         CameraYaw2(&camera, -mouseDelta.x * sensitivity);
-        CameraPitch2(&camera, -mouseDelta.y * sensitivity);
+        CameraPitch2(&camera, pitchDiff);
         // NAPRAVI: napravi da moje da se obrushta kamerata kato na third person i da se interpolira rotaciqta na modela
         // s tazi na kamerata
         // pomoshti promenlivi za tuj
