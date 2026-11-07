@@ -4,7 +4,6 @@
 #include <algorithm>
 #include <iostream>
 #include <stdlib.h>
-
 struct particle
 {
     float life;
@@ -20,6 +19,7 @@ struct particle
 
     void draw()
     {
+
         DrawModel(*model, position, 1.0f, WHITE);
     }
 };
@@ -30,8 +30,10 @@ private:
     float counter;
 
 public:
+    // tuk se spawnvat
     Vector3 origin;
     bool enabled = false;
+    // posoka na koito se nasochvat particulite
     Vector3 direction;
     int emissionPerSecond;
     float accuracy = 0;
@@ -79,6 +81,7 @@ public:
 
     virtual void update()
     {
+        // ot pred nazad za da ne dade segmentation fault kato loopva element kojto ne sushtestvuva
         for (int i = particles.size() - 1; i >= 0; i--)
         {
             particles[i].update();
@@ -216,7 +219,6 @@ public:
 
         // deprekirano
         // UpdateCamera(&camera, CAMERA_THIRD_PERSON);
-        pM.enabled = true;
     }
 
     void update()
@@ -265,10 +267,12 @@ public:
             velocity = Vector3Add(velocity, forward);
             // vurti muhata v posokata nagore i nadolu
             rotation.z = Lerp(rotation.z, cpitch, 0.2f);
+            pM.start();
         }
         else
         {
             rotation.z = Lerp(rotation.z, 0, 0.2f);
+            pM.stop();
         }
         velocity = Vector3Scale(velocity, falloff);
         float dt = GetFrameTime();
