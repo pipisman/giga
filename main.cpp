@@ -41,6 +41,8 @@ public:
     std::vector<particle> particles = std::vector<particle>();
 
     // accuracy e obratno aka 0 e naj tochno 10 e ujasno netochno
+    // position -- da se updateva wseki frame
+    // direction -- sushto
     particleManager(Vector3 position, int emissionPerSecond, Vector3 direction, float accuracy,
                     float plife, float speed, Model *pModel)
     {
@@ -122,7 +124,7 @@ public:
         enabled = false;
     }
 
-    void timer(float t)
+    void startSeconds(float t)
     {
         enabled = true;
         this->timer = t;
@@ -192,6 +194,8 @@ public:
     // camerata si stoi v instancea na igracha
     Camera camera;
     const float falloff = 0.98f;
+    Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
+    particleManager pM = particleManager(position, 10, (Vector3){0, 0, 0}, 22, 3, 10, &cube);
     gigger(Model &model)
     {
         this->model = model;
@@ -212,6 +216,7 @@ public:
 
         // deprekirano
         // UpdateCamera(&camera, CAMERA_THIRD_PERSON);
+        pM.enabled = true;
     }
 
     void update()
@@ -234,6 +239,12 @@ public:
         // promenlivi za tuj Vector3 up = {0, 1, 0};
         Vector3 forward =
             Vector3Normalize(Vector3Subtract(camera.target, camera.position));
+        Vector3 xz = forward;
+        xz.y = 0;
+        xz = Vector3Normalize(xz);
+        pM.direction = Vector3Scale(xz, -1);
+        pM.origin = position;
+        pM.update();
         // Vector3 right = Vector3Normalize(Vector3CrossProduct(forward, up));
         // camerata vinagi e oburnata kum camera.target
         // moje bi go napravi da se obrushta modela bazirano na razlikata mejdu
@@ -261,8 +272,7 @@ public:
         }
         velocity = Vector3Scale(velocity, falloff);
         float dt = GetFrameTime();
-        position =
-            Vector3Add(position, Vector3Multiply(velocity, (Vector3){dt, dt, dt}));
+        position = Vector3Add(position, Vector3Multiply(velocity, (Vector3){dt, dt, dt}));
 
         // premestva kamerata nazad i slaga positiona na fly-a kato target
         Vector3 offset = Vector3Subtract(camera.position, camera.target);
@@ -290,6 +300,7 @@ public:
 
         // Apply the offset directly to the matrix transformation without mutating
         // rotation.y state
+        pM.draw();
         Vector3 adjustedRotation = {rotation.x, rotation.y - (PI / 2.0f),
                                     rotation.z};
         model.transform = MatrixRotateXYZ(adjustedRotation);
