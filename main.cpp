@@ -4,8 +4,14 @@
 #include <algorithm>
 #include <iostream>
 #include <stdlib.h>
+#include <vector>
+
 struct particle
 {
+    float scale = 1;
+    float scalingFactor = 0;
+    // ot 0 kum 1
+    float velocityFactor = 0;
     float life;
     Vector3 position;
     Vector3 velocity;
@@ -15,12 +21,21 @@ struct particle
     {
         position += Vector3Scale(velocity, GetFrameTime());
         life -= GetFrameTime();
+        if (scale > 0)
+        {
+            scale += scalingFactor * GetFrameTime();
+        }
+        else
+        {
+            scale = 0;
+        }
+        velocity = Vector3Scale(velocity, velocityFactor);
     }
 
     void draw()
     {
 
-        DrawModel(*model, position, 1.0f, WHITE);
+        DrawModel(*model, position, scale, WHITE);
     }
 };
 class particleManager
@@ -41,7 +56,8 @@ public:
     float speed;
     Model *pModel;
     std::vector<particle> particles = std::vector<particle>();
-
+    float scalingFactor = 0;
+    float velocityFactor = 0;
     // accuracy e obratno aka 0 e naj tochno 10 e ujasno netochno
     // position -- da se updateva wseki frame
     // direction -- sushto
@@ -62,20 +78,28 @@ public:
         particle p;
         // tuj kvoto prai e wzima ili 0 ili 1 izvajda 0.5 i go umnojava po 2 da stane ili -1 ili 1 da
         // opredeli posokata na particela
-        float sign = 2 * ((float)(rand() % 2) - 0.5f);
+        // float sign = 2 * ((float)(rand() % 2) - 0.5f);
 
         // fuck this nqma da si pravq truda da napisha kakvo pravi
-        float vX = direction.x * speed + direction.x * 0.01 * accuracy * (rand() % 20) * sign;
-        sign = 2 * ((float)(rand() % 2) - 0.5f);
-        float vY = direction.y * speed + direction.y * 0.01 * accuracy * (rand() % 20) * sign;
-        sign = 2 * ((float)(rand() % 2) - 0.5f);
-        float vZ = direction.z * speed + direction.z * 0.01 * accuracy * (rand() % 20) * sign;
-        Vector3 pDirection = (Vector3){vX, vY, vZ};
+        // float vX = direction.x * speed + direction.x * 0.01 * accuracy * (rand() % 20) * sign;
+        // sign = 2 * ((float)(rand() % 2) - 0.5f);
+        // float vY = direction.y * speed + direction.y * 0.01 * accuracy * (rand() % 20) * sign;
+        // sign = 2 * ((float)(rand() % 2) - 0.5f);
+        // float vZ = direction.z * speed + direction.z * 0.01 * accuracy * (rand() % 20) * sign;
+        Vector3 baseVelocity = Vector3Scale(direction, speed);
+
+        float jitterScale = accuracy * 0.5f;
+
+        float rx = ((float)rand() / RAND_MAX - 0.5f) * jitterScale;
+        float ry = ((float)rand() / RAND_MAX - 0.5f) * jitterScale;
+        float rz = ((float)rand() / RAND_MAX - 0.5f) * jitterScale;
+
+        Vector3 pDirection = Vector3Add(baseVelocity, (Vector3){rx, ry, rz});
         p.life = plife;
         p.velocity = pDirection;
         p.model = pModel;
         p.position = origin;
-
+        p.scalingFactor = scalingFactor;
         particles.push_back(p);
     }
 
@@ -198,7 +222,7 @@ public:
     Camera camera;
     const float falloff = 0.98f;
     Model cube = LoadModelFromMesh(GenMeshCube(1, 1, 1));
-    particleManager pM = particleManager(position, 10, (Vector3){0, 0, 0}, 22, 3, 10, &cube);
+    particleManager pM = particleManager(position, 30, (Vector3){0, 0, 0}, 25, 3, 35, &cube);
     gigger(Model &model)
     {
         this->model = model;
@@ -212,6 +236,9 @@ public:
         camera.up = (Vector3){0.0f, 1.0f, 0.0f};
         camera.fovy = 80.0f;
         camera.projection = CAMERA_PERSPECTIVE;
+
+        pM.scalingFactor = -0.9f; // scale over time
+        pM.velocityFactor = 0.99f;
         // todo: zameni vgradenata funkciq sus custom UPDATECAMERAPRO69 kato
         // izpolzva pochti sushtata implementaciq kato CAMERA_THIRDPERSON
         // https://www.reddit.com/r/raylib/comments/v3q41l/full_camera_rotation/
